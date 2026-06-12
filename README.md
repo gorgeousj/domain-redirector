@@ -53,7 +53,11 @@ and exposes Prometheus metrics + structured JSON logs for production observabili
 ### Building
 
 ```bash
-# building for linux musl amd64.
+# building with zigbuild
+cargo zigbuild --release \
+    --target x86_64-unknown-linux-musl
+
+# building container
 docker buildx build --platform linux/amd64 -t domain-redirector:0.1.0 . -f ci/Dockerfile
 
 ```
@@ -78,14 +82,20 @@ desktop_cookie_value = "desktop"
 ### Example
 
 ```bash
-curl -H "Host: example.com" \
- -H "User-Agent: Mozilla/5.0 (iPhone)" \
- http://localhost:8080/path
+# PC/Laptop
+curl -i -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0)" http://example.com/news?id=1
 
 Response:
-
 HTTP/1.1 302 Found
-Location: https://m.example.com/path
+Location: https://www.example.com/news?id=1
+
+# Mobile/Pad
+curl -i -H "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)" http://example.com/news?id=1
+
+Response:
+HTTP/1.1 302 Found
+Location: https://m.example.com/news?id=1
+
 ```
 
 ### Metrics endpoint
