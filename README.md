@@ -33,15 +33,11 @@ and exposes Prometheus metrics + structured JSON logs for production observabili
 - Loop protection (avoid recursive redirects)
 - Path + query preservation
 
----
-
 ### Routing Priority
 
 1. Query (?view=mobile|desktop)
 2. Cookie override
 3. User-Agent detection
-
----
 
 ### Observability
 
@@ -71,8 +67,6 @@ mobile_cookie_value = "mobile"
 desktop_cookie_value = "desktop"
 ```
 
----
-
 ### Example
 
 ```bash
@@ -86,8 +80,6 @@ HTTP/1.1 302 Found
 Location: https://m.example.com/path
 ```
 
----
-
 ### Metrics endpoint
 
 ```text
@@ -99,11 +91,9 @@ redirect_total{device="mobile",host="example.com"} 1234
 redirect_total{device="desktop",host="example.com"} 987
 ```
 
----
-
 ### Logging
 
-```text
+```json
 Logs are emitted in JSON format:
 
 {
@@ -115,14 +105,13 @@ Logs are emitted in JSON format:
 }
 ```
 
----
-
 ### Prometheus Integration
 
+```yaml
 scrape_configs:
-
-- job_name: "domain-redirector"
-  static_configs:
-  - targets: ["domain-redirector:8080"]
+  - job_name: "domain-redirector"
+    static_configs:
+      - targets: ["domain-redirector:8080"]
+```
 
 ---
