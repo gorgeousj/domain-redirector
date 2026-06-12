@@ -50,6 +50,14 @@ and exposes Prometheus metrics + structured JSON logs for production observabili
 
 ## Usage
 
+### Building
+
+```bash
+# building for linux musl amd64.
+docker buildx build --platform linux/amd64 -t domain-redirector:0.1.0 . -f ci/Dockerfile
+
+```
+
 ### Configuration
 
 ```toml
