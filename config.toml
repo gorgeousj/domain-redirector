@@ -1,0 +1,11 @@
+listen = "0.0.0.0:8080"
+
+mobile_prefix = "m"
+desktop_prefix = "www"
+
+redirect_code = 302
+
+cookie_name = "site"
+
+mobile_cookie_value = "mobile"
+desktop_cookie_value = "desktop"
