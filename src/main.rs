@@ -48,6 +48,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/", any(handler))
         .route("/{*path}", any(handler))
+        .route("/healthz", axum::routing::get(health_handler))
         .route("/metrics", axum::routing::get(metrics_handler))
         .with_state(state);
 
@@ -58,6 +59,10 @@ async fn main() -> anyhow::Result<()> {
     axum::serve(listener, app).await?;
 
     Ok(())
+}
+
+async fn health_handler() -> impl IntoResponse {
+    (StatusCode::OK, "ok")
 }
 
 async fn metrics_handler() -> impl IntoResponse {
