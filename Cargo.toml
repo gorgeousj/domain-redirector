@@ -1,10 +1,10 @@
 [package]
 name = "domain-redirector"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
-axum = "0.8.9"
+axum = "0.8"
 tokio = { version = "1", features = ["full"] }
 
 serde = { version = "1", features = ["derive"] }
@@ -17,3 +17,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 prometheus = "0.14"
 lazy_static = "1.5"
+
+[build-dependencies]
+vergen-gix = { version = "10.0.0", features = ["build", "rustc"] }

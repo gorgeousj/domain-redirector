@@ -3,6 +3,7 @@ mod metrics;
 mod ua;
 
 use std::sync::Arc;
+use std::sync::LazyLock;
 
 use axum::{
     Router,
@@ -20,19 +21,36 @@ use tracing_subscriber::EnvFilter;
 #[derive(Clone)]
 struct AppState {
     config: Arc<Config>,
+    mobile_prefix_dot: String,
+    desktop_prefix_dot: String,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //
+    // version
+    //
+    if matches!(std::env::args().nth(1).as_deref(), Some("--version" | "-V")) {
+        println!("Name: {}", env!("CARGO_PKG_NAME"));
+        println!("Version: {}", version());
+        println!("Git SHA: {}", *GIT_SHA);
+        println!("Rust: {}", rust_version());
+        println!("Build Time: {}", *BUILD_TIME);
+
+        return Ok(());
+    }
+    //
     // JSON structured logging
     //
     tracing_subscriber::fmt()
         .json()
+        .flatten_event(true)
+        .with_current_span(false)
+        .with_span_list(false)
+        .with_target(false)
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
         )
-        .with_target(false)
         .init();
 
     let config_path = std::env::args()
@@ -43,7 +61,11 @@ async fn main() -> anyhow::Result<()> {
 
     let listen_addr = config.listen.clone();
 
-    let state = AppState { config };
+    let state = AppState {
+        mobile_prefix_dot: format!("{}.", config.mobile_prefix),
+        desktop_prefix_dot: format!("{}.", config.desktop_prefix),
+        config,
+    };
 
     let app = Router::new()
         .route("/", any(handler))
@@ -54,12 +76,42 @@ async fn main() -> anyhow::Result<()> {
 
     let listener = tokio::net::TcpListener::bind(&listen_addr).await?;
 
-    println!("listen on {}", listen_addr);
+    tracing::info!(
+        listen_addr = listen_addr.as_str(),
+        version = version(),
+        git_sha = *GIT_SHA,
+        event = "startup"
+    );
 
     axum::serve(listener, app).await?;
 
     Ok(())
 }
+
+fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
+static GIT_SHA: LazyLock<String> = LazyLock::new(|| {
+    option_env!("VERGEN_GIT_SHA")
+        .unwrap_or("unknown")
+        .chars()
+        .take(8)
+        .collect()
+});
+
+fn rust_version() -> &'static str {
+    option_env!("VERGEN_RUSTC_SEMVER").unwrap_or("unknown")
+}
+
+static BUILD_TIME: LazyLock<String> = LazyLock::new(|| {
+    let ts = option_env!("VERGEN_BUILD_TIMESTAMP").unwrap_or("unknown");
+
+    ts.split('.')
+        .next()
+        .map(|s| format!("{s}Z"))
+        .unwrap_or_else(|| ts.to_string())
+});
 
 async fn health_handler() -> impl IntoResponse {
     (StatusCode::OK, "ok")
@@ -93,13 +145,10 @@ async fn handler(
 
     let cfg = &state.config;
 
-    let mobile_prefix_dot = format!("{}.", cfg.mobile_prefix);
-    let desktop_prefix_dot = format!("{}.", cfg.desktop_prefix);
-
     //
     // prevent loop redirect
     //
-    if host.starts_with(&mobile_prefix_dot) || host.starts_with(&desktop_prefix_dot) {
+    if host.starts_with(&state.mobile_prefix_dot) || host.starts_with(&state.desktop_prefix_dot) {
         return StatusCode::NO_CONTENT.into_response();
     }
 
